@@ -1,42 +1,83 @@
 import argparse
-import os.path
+import os
 import typing as tp
 import re
+from textblob import TextBlob
+from colorama import Fore
 
+parser = argparse.ArgumentParser(
+    prog="mytypo",
+    description="This programs checks typos in given python file for comments",
+)
 
-parser = argparse.ArgumentParser(prog="mytpo",
-description="This programs checks typos in given python file for comments")
+parser.add_argument("path")
 
-parser.add_argument("filename")
-parser.add_argument("-c","--correct",help="corrects typos with most likely value")
+rgx_single_comment = r"#[^\n\r]+\w+$"
 
-rgx_single_comment = r'#[^\n\r]+\w+(?:\*\)|[\n\r])'
-
-# some comment
-
-def _get_comments(file:str) -> tp.Dict:
+def _get_comments_for_single_file(path: str) -> tp.Dict:
     _comments = {}
-    with open(file, "r") as f:
-        _content = f.read()
+    with open(path, "r") as f:
+        _lines = f.readlines()
 
-    for m in re.findall(rgx_single_comment, _content):
-        print(m)
+    _line_number = 1
+    for _l in _lines:
+        result = re.match(rgx_single_comment, _l)
+
+        if result:
+            _comments["{}:{}".format(path, _line_number)] = result.group(0)
+
+        _line_number += 1
 
     return _comments
 
-def check_typo():
 
-    args = parser.parse_args()
-    _file = args.filename
+def _get_comments(path: str, is_file: bool = True) -> tp.Dict:
 
-    if not os.path.exists(_file):
-        print("The file is not exist:{}".format(_file))
+    if is_file:
+        return _get_comments_for_single_file(path)
     else:
-        _comments = _get_comments(file=_file)
-        for k,v in _comments:
-            print("{}:{}".format(k,v))
+        dict_main = {}
+        for file in os.listdir(path):
+            f = os.path.join(path, file)
+            if f.endswith(".py"):
+                dict_temp = _get_comments_for_single_file(f)
+                dict_main.update(dict_temp)
+        return dict_main
 
 
+def check_typo(path=None)-> tp.List[str]:
+    suggestions = []
+    if path:
+        _path = path
+    else:
+        args = parser.parse_args()
+        _path = args.path
+    
+
+    if os.path.isdir(_path):
+        comments = _get_comments(_path, False)
+    elif os.path.isfile(_path):
+        comments = _get_comments(_path)
+    else:
+        print("The file or directory is not exist:{}".format(_path))
+        return
+
+    for k, v in comments.items():
+        v = v.replace("#", "")
+
+        _text_blob = TextBlob(v)
+        _corrected = _text_blob.correct()
+
+        if _corrected != v:
+            suggest = f"{k}: miss spell in {Fore.RED}{v}{Fore.RESET}, {Fore.LIGHTYELLOW_EX} suggestion is {Fore.GREEN}{_corrected}"
+            print(
+                Fore.LIGHTYELLOW_EX,
+                suggest,
+                Fore.RESET,
+            )
+            suggestions.append(suggest)
+            
+    return suggestions
 
 if __name__ == "__main__":
     check_typo()
