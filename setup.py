@@ -5,7 +5,7 @@ with open('README.md','r') as f:
 
 setup(
     name="mytypo",
-    version="0.0.1",
+    version="0.1.0",
     description="Checks typos in one lines comments",
     url='https://github.com/worthrd/mytypo',
     author='Recep Daban',
