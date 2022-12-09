@@ -47,7 +47,14 @@ def _get_comments(path: str, is_file: bool = True) -> tp.Dict:
         return dict_main
 
 
-def check_typo(path=None) -> tp.List[Tuple[str, str, str]]:
+def _print_suggestions(suggestions: Tuple[str, str, str]):
+    for k, v, c in suggestions:
+        print(
+            f"{Fore.LIGHTYELLOW_EX}{k}: miss spell in {Fore.RED}{v}{Fore.RESET}, {Fore.LIGHTYELLOW_EX} suggestion is {Fore.GREEN}{c}{Fore.RESET}"
+        )
+
+
+def check_typo(path=None) -> tp.Union[tp.List[Tuple[str, str, str]], None]:
     suggestions = []
     if path:
         _path = path
@@ -73,14 +80,11 @@ def check_typo(path=None) -> tp.List[Tuple[str, str, str]]:
             suggest = (k, v, _corrected)
             suggestions.append(suggest)
 
-    return suggestions
+    if path is None:
+        _print_suggestions(suggestions)
+    else:
+        return suggestions
 
 
 if __name__ == "__main__":
-    sugggests = check_typo()
-    if len(sugggests) > 0:
-        for s in sugggests:
-            k, v, _corrected = s
-            print(
-                f"{Fore.LIGHTYELLOW_EX}{k}: miss spell in {Fore.RED}{v}{Fore.RESET}, {Fore.LIGHTYELLOW_EX} suggestion is {Fore.GREEN}{_corrected}{Fore.RESET}"
-            )
+    check_typo()
